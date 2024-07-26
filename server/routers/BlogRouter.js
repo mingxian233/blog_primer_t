@@ -1,8 +1,8 @@
 const express = require("express")
 const router = express.Router()
-const {db, genid} = require("../db/DbUtils")
+const { db, genid } = require("../db/DbUtils")
 
-//获取博客数据
+
 router.get("/detail", async (req, res) => {
 
     let { id } = req.query
@@ -24,11 +24,19 @@ router.get("/detail", async (req, res) => {
 
 })
 
-//查找
+//查询博客
 router.get("/search", async (req, res) => {
 
 
-
+    /**
+     * keyword 关键字
+     * categoryId 分类编号
+     * 
+     * 分页：
+     * page 页码
+     * pageSize 分页大小
+     * 
+     */
     let { keyword, categoryId, page, pageSize } = req.query
 
     page = page == null ? 1 : page;
@@ -51,18 +59,17 @@ router.get("/search", async (req, res) => {
 
     let whereSqlStr = ""
     if (whereSqls.length > 0) {
-        whereSqlStr = " WHERE " + whereSqls.join(" AND ") 
+        whereSqlStr = " WHERE " + whereSqls.join(" AND ")
     }
 
-    //查找分页数据
+    //查询分页数据的算法
     let searchSql = " SELECT `id`,`category_id`,`create_time`,`title`,substr(`content`,0,50) AS `content` FROM `blog` " + whereSqlStr + " ORDER BY `create_time` DESC LIMIT ?,? "
-    //LIMIT是分页查询的关键字，第一个参数是起始位置，第二个参数是查询的数量
-    //IN 1 10  2,10    3,10
-    //OUT 0,10  10,10   20,10
+    // 1 10  2,10    3,10
+    // 0,10  10,10   20,10
     let searchSqlParams = params.concat([(page - 1) * pageSize, pageSize])
 
     //查询数据总数
-    let searchCountSql = " SELECT count(*) AS `count` FROM `blog` " + whereSqlStr; 
+    let searchCountSql = " SELECT count(*) AS `count` FROM `blog` " + whereSqlStr;
     let searchCountParams = params
 
     //分页数据
@@ -94,8 +101,7 @@ router.get("/search", async (req, res) => {
 
 })
 
-//删除博客
-//localhost:1235/blog/delete?id=18322383423843243
+// 删除接口 /blog/delete?id=3434434212
 router.delete("/_token/delete", async (req, res) => {
     let id = req.query.id
     const delete_sql = "DELETE FROM `blog` WHERE `id` = ?"
@@ -152,7 +158,7 @@ router.post("/_token/add", async (req, res) => {
 
     let { err, rows } = await db.async.run(insert_sql, params)
 
-    if (!err) {
+    if (err == null) {
         res.send({
             code: 200,
             msg: "添加成功"
@@ -165,5 +171,6 @@ router.post("/_token/add", async (req, res) => {
     }
 
 })
+
 
 module.exports = router

@@ -1,40 +1,46 @@
-const express = require("express")
-const router = express.Router()
-const fs = require("fs")
-const {db, genid} = require("../db/DbUtils")
+const express = require("express");
+const router = express.Router();
+const fs = require("fs");
+const { db, genid } = require("../db/DbUtils");
+const multer = require("multer");
 
-router.post("/rich_editor_upload", async(req, res) =>{
-    if(!req.files){ //失败
+const upload = multer({
+    dest: 'public/upload/',
+    limits: { fileSize: 50 * 1024 * 1024 }
+});
+
+router.post("/rich_editor_upload", upload.array('files'), async (req, res) => {
+    if (!req.files || req.files.length === 0) {
         res.send({
-            "errno": 1,
+            "errno": 1, // 只要不等于 0 就行
             "message": "失败信息"
-        })
+        });
         return;
     }
 
     let files = req.files;
-    let return_files = [];
-    for(let file of files){
-        let file_ext = file.originalname.substring(file.originalname.lastIndexOf(".") + 1)
+    let ret_files = [];
+
+    for (let file of files) {
+        // 获取文件名字后缀
+        let file_ext = file.originalname.substring(file.originalname.lastIndexOf(".") + 1);
+        // 随机文件名字
         let file_name = genid.NextId() + "." + file_ext;
 
-        //修改文件名
+        // 修改名字加移动文件
         fs.renameSync(
             process.cwd() + "/public/upload/temp/" + file.filename,
             process.cwd() + "/public/upload/" + file_name
-        )
-        return_files.push("/upload/" + file_name)
+        );
+        ret_files.push("/upload/" + file_name);
     }
-
-    res.send({ //成功
-        "errno": 0,
-        "data":{
-            "url":return_files[0],
+    // wang-editor 返回模板
+    res.send({
+        "errno": 0, // 注意：值是数字，不能是字符串
+        "data": {
+            "url": ret_files[0], // 图片 src ，必须
         }
-    })
-})
+    });
+});
 
-
-
-
-module.exports = router
+module.exports = router;
